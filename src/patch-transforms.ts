@@ -105,8 +105,23 @@ import {
  * statement, the first preferred. Like 12, this bump rescues nobody by itself: on
  * every measured pre-2.1.290 bundle the output is byte-identical to version 14's,
  * and a 2.1.290 install was never patched. It is bumped because the anchor changed.
+ *
+ * 16 — PATCH 10 stopped recognising Claude Code 2.1.304. The child-env builder
+ * gained an optional parameter (`function is(e){`), a base env that the parent's
+ * `process.env` is spread over (`i={...e,...process.env}`), so the head, which
+ * admitted only a zero-arg `function X(){`, and the `{...process.env` body check
+ * both refused it. The head now admits one plain parameter and the body check
+ * asks only that the body spread `...process.env`. The restored env is spread over
+ * the parameter, so a key the restore removes shows the base's value through. On
+ * 2.1.304 the Bash tool passes such a base whose values reach the child: the
+ * shell snapshot's exports, collected under the desktop host. On the clodex-only
+ * path they cannot recover clodex's values, because the snapshot shell is spawned
+ * with this builder's restored env and its exports keep only names the builder
+ * leaves unset when they are parsed. That is a property of Claude Code's callers,
+ * not something this transform enforces. Every measured bundle without the
+ * parameter matches exactly as under version 15.
  */
-export const PATCH_TRANSFORMS_VERSION = 15;
+export const PATCH_TRANSFORMS_VERSION = 16;
 
 export interface PatchScriptModelEntry {
   alias?: string;
@@ -966,16 +981,18 @@ export function applyClodexPatches(source: string, config: PatchScriptModelConfi
     const marker = '/*ccpatch:child-network-env*/';
     const contractVar = q(NETWORK_ENV_CONTRACT_VAR);
     const networkVars = JSON.stringify(CHILD_NETWORK_ENV_VARS);
-    // What the REWRITE depends on: `{...process.env` is the merged copy every
+    // What the REWRITE depends on: a spread of `process.env` is the merged copy every
     // `process.env` read is redirected away from (from 2.1.290 it is the base copy
-    // the settings env is laid over, and the returned copy spreads that). Nothing
+    // the settings env is laid over, and the returned copy spreads that; from
+    // 2.1.304 that base copy spreads the builder's optional parameter FIRST,
+    // `{...e,...process.env}`, so the spread need not open the literal). Nothing
     // else is: the builder's remote-mode check used to read
     // `process.env.CLAUDE_CODE_REMOTE` and so was rewritten with everything else, but 2.1.260 reads that flag off the typed
     // env accessor instead and the rewrite no longer touches it. That is a change
     // in nothing that matters here — `CLAUDE_CODE_REMOTE` is not one of the
     // network variables clodex reverts, so which object it is read from cannot
     // change what the child sees.
-    const requiredBodyLiterals = ['{...process.env'];
+    const requiredBodyLiterals = ['...process.env'];
     // A smell test, NOT the identity proof. Identity is the whole-bundle count of
     // the passthrough early-out below, the name the head pins on, and the brace
     // walk proving the match spans exactly the function it started in.
@@ -1043,6 +1060,7 @@ export function applyClodexPatches(source: string, config: PatchScriptModelConfi
      * this routine disagrees with a real parser 3-4 times per bundle, in all 27
      * (counting the named `function X(){` bodies this anchor can open, which is
      * the population that matters — not arrows, methods or anonymous functions).
+     * Version 16 also opens one-parameter `function X(e){` bodies; those were not counted.
      * (Escaped `\{`/`\}` are harmless — the `\\` branch skips them.)
      *
      * What actually makes it unreachable is narrower and stronger: a mis-tallied
@@ -1121,7 +1139,7 @@ export function applyClodexPatches(source: string, config: PatchScriptModelConfi
     }
     applyOnce(
       patchName,
-      /(function [\w$]+\(\)\{)(let[ {[](?:[^;{}]|\{[^;{}]*\})*?(?:\{[^;{}]*)?(?:getAgentProxyEnv|[\w$]+\(process\.env\.CLAUDE_CODE_REMOTE\)\?)(?:(?!\}\s*function )[\s\S])*?\)return process\.env;let (?:(?:[^;{}]|\{[^;{}]*\})*?,)??([\w$]+)=\{(?:(?!\}\s*function )[\s\S])*?return \3)(\})/,
+      /(function [\w$]+\([\w$]*\)\{)(let[ {[](?:[^;{}]|\{[^;{}]*\})*?(?:\{[^;{}]*)?(?:getAgentProxyEnv|[\w$]+\(process\.env\.CLAUDE_CODE_REMOTE\)\?)(?:(?!\}\s*function )[\s\S])*?\)return process\.env;let (?:(?:[^;{}]|\{[^;{}]*\})*?,)??([\w$]+)=\{(?:(?!\}\s*function )[\s\S])*?return \3)(\})/,
       (match, head, body, _copyVar, tail) => {
         // The tail is found lazily, so it can stop in the wrong place in EITHER
         // direction, and both are silent without this check:
