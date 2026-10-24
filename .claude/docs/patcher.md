@@ -107,6 +107,15 @@ So the blob is published, not rebuilt:
   compile what it finds. JSC's key also carries the source length, so an edit that changes a
   module's length is rejected anyway; that covers every built-in patch site but NOT a same-length
   local patch, which is the reachable case this closes.
+- **On a linked-payload blob the candidate's bytecode ranges are cleared before the repack.**
+  Since 2.1.310 every module's `bytecode` range runs to the end of one shared ~100 MB payload (see
+  `claude-code-internals.md`). tweakcc copies each range separately, so its repack would build a
+  ~230 GB blob; the sizing mirror predicted exactly that and refused all eight builds with
+  `clodex is reading overlapping payload ranges`. `prepareRepackInput` zeroes every bytecode pair
+  in the candidate's module table (never a backup) between `planBundleWrite` and `writeContent`,
+  and `repackedBlobBytes` counts those ranges as empty. Nothing is lost: the repack's output is
+  overwritten by the pristine blob the plan already read, ranges included. Keyed on the flag, so
+  older releases repack byte for byte as before.
 - **`SOURCE_TEXT_CONTIGUOUS` is cleared** because the appended sources make it false. It is only a
   `madvise` hint; a blob that does not claim it simply does not get the hint.
 - **The published blob is the same total length as the section tweakcc produced**, so the trailer
