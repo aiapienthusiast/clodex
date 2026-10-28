@@ -400,7 +400,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 export function rootHelpText(): string {
   return `${pc.bold('clodex')} v${VERSION}
-Bridge Claude Code to OpenAI, OpenCode Go, Ollama Cloud and custom OpenAI-compatible models.
+Bridge Claude Code to OpenAI, OpenCode Go, Ollama Cloud, Cheaper Inference and custom OpenAI-compatible models.
 
 ${pc.bold('Usage:')}
   clodex claude [options] [claude-flags]
@@ -484,6 +484,8 @@ ${pc.bold('Providers:')}
   openai-oauth   ChatGPT/Codex plan OAuth — sign in with clodex providers auth openai
   opencode-go    OpenCode Go API key — add with clodex providers add
   ollama-cloud   Ollama Cloud API key — add with clodex providers add
+  cheaper-inference
+                 Cheaper Inference API key — add with clodex providers add
   custom-<name>  Any OpenAI-compatible server (OpenRouter, LM Studio, …) — add with clodex providers add
 
 ${pc.bold('Model switching:')}

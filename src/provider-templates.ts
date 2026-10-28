@@ -15,6 +15,12 @@ import {
   OLLAMA_CLOUD_PROVIDER_ID,
   OLLAMA_CLOUD_PROVIDER_NAME,
 } from './data/ollama-cloud-models.js';
+import {
+  buildCheaperInferenceModels,
+  CHEAPER_INFERENCE_COMPLETIONS_BASE_URL,
+  CHEAPER_INFERENCE_PROVIDER_ID,
+  CHEAPER_INFERENCE_PROVIDER_NAME,
+} from './data/cheaper-inference-models.js';
 
 export type ProviderAuthType = 'api' | 'oauth' | 'none';
 export type ProviderModelSource = 'api-list' | 'static-seed' | 'manual-only';
@@ -210,6 +216,23 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     verifyCredential: verifyOllamaCloudCredential,
     // Getter for the same reason as opencode-go: no eager catalog clone at import.
     get staticModels() { return buildOllamaCloudModels(); },
+    staticModelPolicy: 'allowlist',
+    preserveModelPricing: true,
+    supported: true,
+  },
+  {
+    id: CHEAPER_INFERENCE_PROVIDER_ID,
+    name: CHEAPER_INFERENCE_PROVIDER_NAME,
+    authType: 'api',
+    npm: '@ai-sdk/openai-compatible',
+    defaultBaseUrl: CHEAPER_INFERENCE_COMPLETIONS_BASE_URL,
+    modelsPath: '/models',
+    signupUrl: 'https://cheaperinference.com',
+    modelSource: 'api-list',
+    // /models answers 401 without a key, so the shared api-list validation
+    // rejects a bad key and no separate credential probe is needed.
+    // Getter for the same reason as opencode-go: no eager catalog clone at import.
+    get staticModels() { return buildCheaperInferenceModels(); },
     staticModelPolicy: 'allowlist',
     preserveModelPricing: true,
     supported: true,

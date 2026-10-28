@@ -9,14 +9,17 @@ import {
 import { fetchTemplateModels } from '../src/registry/fetch-template-models.js';
 
 describe('provider templates', () => {
-  it('offers OpenAI, Ollama Cloud and OpenCode Go API-key templates as addable', () => {
-    expect(listSupportedTemplates().map(t => t.id)).toEqual(['ollama-cloud', 'openai', 'opencode-go']);
+  it('offers Cheaper Inference, OpenAI, Ollama Cloud and OpenCode Go API-key templates as addable', () => {
+    expect(listSupportedTemplates().map(t => t.id))
+      .toEqual(['cheaper-inference', 'ollama-cloud', 'openai', 'opencode-go']);
   });
 
   it('filters templates by search query', () => {
     const templates = listSupportedTemplates();
-    expect(filterTemplates(templates, 'open').map(t => t.id)).toEqual(['ollama-cloud', 'openai', 'opencode-go']);
+    expect(filterTemplates(templates, 'open').map(t => t.id))
+      .toEqual(['cheaper-inference', 'ollama-cloud', 'openai', 'opencode-go']);
     expect(filterTemplates(templates, 'ollama').map(t => t.id)).toEqual(['ollama-cloud']);
+    expect(filterTemplates(templates, 'cheaper').map(t => t.id)).toEqual(['cheaper-inference']);
     expect(filterTemplates(templates, 'groq')).toEqual([]);
   });
 
@@ -33,9 +36,12 @@ describe('provider templates', () => {
   });
 
   it('excludes already-configured providers from addable list', () => {
-    expect(listAddableTemplates(['openai']).map(t => t.id)).toEqual(['ollama-cloud', 'opencode-go']);
-    expect(listAddableTemplates(['openai', 'opencode-go']).map(t => t.id)).toEqual(['ollama-cloud']);
-    expect(listAddableTemplates([]).map(t => t.id)).toEqual(['ollama-cloud', 'openai', 'opencode-go']);
+    expect(listAddableTemplates(['openai']).map(t => t.id))
+      .toEqual(['cheaper-inference', 'ollama-cloud', 'opencode-go']);
+    expect(listAddableTemplates(['openai', 'opencode-go']).map(t => t.id))
+      .toEqual(['cheaper-inference', 'ollama-cloud']);
+    expect(listAddableTemplates([]).map(t => t.id))
+      .toEqual(['cheaper-inference', 'ollama-cloud', 'openai', 'opencode-go']);
   });
 });
 
